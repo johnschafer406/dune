@@ -1,0 +1,17 @@
+SELECT
+date_trunc('day', evt_block_time),
+SUM(p.price * (value/ 1e18)) AS total_volume_in_usd --the metric/agregation you want to calculate
+
+FROM erc20."ERC20_evt_Transfer" --Table of choice for event
+LEFT JOIN prices."usd" p        --Use some variation of JOIN function to combine selected tables
+ON p.minute = date_trunc('minute', evt_block_time) --Mapping price of token to value of transfer based on time (on the minute)
+
+WHERE ---Additional conditions 
+p.minute > now() - interval '7 day'
+    AND (
+             erc20."ERC20_evt_Transfer".contract_address ='\x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce' --Smart contract address
+         and erc20."ERC20_evt_Transfer".contract_address != '\x0000000000000000000000000000000000000000'
+         and erc20."ERC20_evt_Transfer".contract_address != '\x000000000000000000000000000000000000dead'
+          )
+    AND p.contract_address = erc20."ERC20_evt_Transfer".contract_address --Confirming the contract address matches in both tables
+GROUP BY 1
